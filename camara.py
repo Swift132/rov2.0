@@ -1,26 +1,50 @@
-import picamera
-import gst-rtsp-server
+import cv2
+from flask import Flask, render_template, Response
 
-# Crie uma instância da câmera
-camera = picamera.PiCamera()
+app = Flask(__name__)
 
-# Configure a resolução e a taxa de quadros da câmera
-camera.resolution = (640, 480)
-camera.framerate = 30
+@app.route('/html')
 
-# Crie um pipeline de vídeo usando o gst-rtsp-server
-pipeline = (
-    "rtspsrc location=rtsp://0.0.0.0:8554/stream latency=0 ! "
-    "rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! "
-    "x264enc tune=zerolatency ! rtph264pay name=pay0 pt=96"
-)
+def index():
+    return render_template('index.html')
 
-# Inicie a câmera e o pipeline
-camera.start_recording(pipeline, format="h264")
-server = gst-rtsp-server.Server()
-server.attach(pipeline)
-server.set_service("8554")
+@app.route('/')
 
-# Execute o loop infinito para transmitir o vídeo
-while True:
-    pass
+def gen():
+    # Obtém a referência da câmera
+    camera = cv2.VideoCapture(0)
+
+    # Define o codec do vídeo
+    fourcc = cv2.VideoWriter_fourcc(*'H264')
+
+    # Cria um objeto VideoWriter
+    out = cv2.VideoWriter('output.mp4', fourcc, 20.0, (640, 480))
+
+    while True:
+        # Captura o próximo frame da câmera
+        success, frame = camera.read()
+
+        # Verifica se o frame foi capturado corretamente
+        if not success:
+            break
+
+        # Ajusta o tamanho do frame para 640x480
+        frame = cv2.resize(frame, (640, 480))
+
+        # Adiciona o frame ao arquivo de saída
+        out.write(frame)
+
+        # Converte o frame para o formato JPEG
+        ret, jpeg = cv2.imencode('.jpg', frame)
+
+        # Envia o frame para o cliente
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
+
+@app.route('/video_feed')
+def video_feed():
+    return Response(gen(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', debug=True)
