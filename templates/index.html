@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Arduino Control</title>
+    </head>
+    <script>
+        function piscarLed() {
+            var pin = document.getElementById("pin").value;
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    alert(this.responseText);
+                }
+            };
+            xhttp.open("GET", "/piscar-led/" + pin, true);
+            xhttp.send();
+        }
+    </script>
+    <style>
+        title1 {
+    color: black;
+    font-family: 'Times New Roman', Times, serif;
+    text-align: center;
+}
+    </style>
+    <body>
+        <h1 id="title1">Arduino Control</h1>
+        <label for="pin">Pin:</label>
+        <input type="text" id="pin" name="pin" value="13">
+        <button onclick="piscarLed()">Piscar LED</button>
+        <a href="/led/1">Turn On</a> | <a href="/led/0">Turn Off</a> | <a href="/led/3"
+    </body>
+</html>
