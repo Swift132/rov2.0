@@ -1,0 +1,12 @@
+FROM ubuntu:18.04
+
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libv4l-dev \
+    netcat \
+    nginx
+
+COPY default.conf /etc/nginx/conf.d/
+COPY index.html /var/www/html/
+
+CMD ffmpeg -f v4l2 -input_format mjpeg -i /dev/video0 -vcodec libx264 -preset ultrafast -tune zerolatency -b:v 600k -f mpegts - | nc -l -p 8080 & nginx -g 'daemon off;'
